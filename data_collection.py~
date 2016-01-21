@@ -1,0 +1,92 @@
+import subprocess
+import argparse
+import requests
+import timeit
+import sys
+import os
+
+
+benchmarker = "perf.php"
+source_root = "sources"
+results_root = "results"
+log_root = "logs"
+logs = dict ()
+
+SMS = 1
+STDERR = 2
+
+
+def initialise():
+    for test in tests:
+        subprocess.call("mkdir " + results_root + "/" + test + " 2> /dev/null", shell=true)
+
+    logs[SMS] = 'sms.txt'
+    logs[STDERR] = 'error.txt'
+
+
+def run_test(test, iteration, engine):
+    output_location = results_root + "/" + test + "/" + engine + "-" + str(iteration) + ".txt"
+    print(engine + ": Running " + test + " test #" + str(iteration))
+    subprocess.call("hhvm " + benchmarker + " --" + test + " --hhvm=" + source_root + "/" + engine + " 2> /dev/null > " + output_location, shell=True)
+
+
+def send_sms(message):
+    request_data = dict()
+    request_data['username'] = 'nicksifniotis'
+    request_data['password'] = 'b64094bf'
+    request_data['to'] = '0402624457'
+    request_data['from'] = 'N224'
+    request_data['message'] = message
+
+    r = requests.post("https://api.smsbroadcast.com.au/api-adv.php", request_data)
+
+    log_message = ""
+    text_lines = r.text.split("\n")
+    for line in text_lines:
+        bits = line.split(":")
+        if len(bits) > 0:
+            if (bits[0] == "OK"):
+                log_message += "Message sent - reference " + bits[2]
+            elif (bits[0] == "BAD"):
+                log_message += "Message failed. Reason: " + bits[2]
+            elif (bits[0] == "ERROR"):
+                log_message += "Message failed. Reason: " + bits[1]
+
+    log (log_message, SMS)
+
+
+def log(message, target_log):
+    log_file = log_root + "/" + logs[target_log]
+    with open (log_file, 'a') as logger:
+        logger.write(message + "\n")
+
+
+parser = argparse.ArgumentParser(description="Benchmark some HHVM engines against the oss-performance framework.")
+parser.add_argument('--benchmarks', nargs='*', help="The oss-performance benchmarks to run.")
+parser.add_argument('--engines', nargs='*', help="The HHVM engine (located in the sources directory) to test.")
+parser.add_argument('--iterations', '-i', nargs=1, default=20, help="Number of tests to execute. The default is 20.")
+args = parser.parse_args()
+
+engines = args.engines
+tests = args.benchmarks
+iterations = int(args.iterations[0])
+
+if engines is None or tests is None:
+    parser.print_help()
+    exit(0)
+
+if os.environ.get('OSS_PERFORMANCE_DIR') is None:
+    print("Unable to execute script. The environment variable OSS_PERFORMANCE_DIR is not set.")
+    exit(0)
+
+benchmarker = os.environ.get('OSS_PERFORMANCE_DIR') + benchmarker
+initialise()
+start = timeit.default_timer()
+for engine in engines:
+    for test in tests:
+        for iteration in range (0, iterations):
+            run_test(test, iteration, engine)
+    send_sms("Finished running tests on " + engine)
+
+stop = timeit.default_timer()
+print("Testing completed! Total runtime: " + str(stop - start))

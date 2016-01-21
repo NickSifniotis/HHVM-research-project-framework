@@ -1,0 +1,19 @@
+{
+    "Combined": {
+        "Siege requests": 40170,
+        "Siege wall sec": 0.3,
+        "Siege RPS": 671.51,
+        "Siege successful requests": 40170,
+        "Siege failed requests": 0,
+        "Nginx hits": 40370,
+        "Nginx avg bytes": 28337.738518702,
+        "Nginx avg time": 0.29597406489967,
+        "Nginx P50 time": 0.281,
+        "Nginx P90 time": 0.413,
+        "Nginx P95 time": 0.467,
+        "Nginx P99 time": 0.552,
+        "Nginx 200": 40196,
+        "Nginx 499": 174,
+        "canonical": 1
+    }
+}
